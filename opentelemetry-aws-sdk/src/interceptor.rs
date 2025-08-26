@@ -11,6 +11,7 @@ use aws_smithy_runtime_api::client::interceptors::{
 use aws_smithy_runtime_api::client::runtime_components::RuntimeComponents;
 use aws_smithy_types::config_bag::ConfigBag;
 use opentelemetry::{global, trace::{Status, Tracer, Span}, KeyValue, InstrumentationScope};
+use opentelemetry_semantic_conventions as semconv;
 
 use crate::attributes::AttributeBuilder;
 use crate::config::AwsOtelConfig;

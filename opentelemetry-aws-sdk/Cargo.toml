@@ -17,7 +17,7 @@ rust-version = "1.75"
 
 [dependencies]
 opentelemetry = { workspace = true }
-opentelemetry-semantic-conventions = { workspace = true }
+opentelemetry-semantic-conventions = { workspace = true, features = ["semconv_experimental"] }
 aws-smithy-runtime-api = "1.7"
 aws-smithy-types = "1.2"
 aws-types = "1.3"

@@ -1,6 +1,7 @@
 //! AWS service-specific attribute builders.
 
 use opentelemetry::KeyValue;
+use opentelemetry_semantic_conventions as semconv;
 
 /// Trait for building service-specific attributes from AWS SDK operations.
 pub trait AttributeBuilder {
@@ -59,7 +60,7 @@ pub struct DynamoDbAttributeBuilder;
 impl AttributeBuilder for DynamoDbAttributeBuilder {
     fn build_attributes(&self, _service: &str, operation: &str, input: &dyn std::any::Any) -> Vec<KeyValue> {
         let mut attributes = vec![
-            KeyValue::new("db.system", "aws_dynamodb"),
+            KeyValue::new(semconv::DB_SYSTEM, semconv::DB_SYSTEM_DYNAMODB),
         ];
         
         match operation {
@@ -123,38 +124,38 @@ pub struct SqsAttributeBuilder;
 impl AttributeBuilder for SqsAttributeBuilder {
     fn build_attributes(&self, _service: &str, operation: &str, input: &dyn std::any::Any) -> Vec<KeyValue> {
         let mut attributes = vec![
-            KeyValue::new("messaging.system", "aws_sqs"),
+            KeyValue::new(semconv::MESSAGING_SYSTEM, semconv::MESSAGING_SYSTEM_AWS_SQS),
         ];
         
         match operation {
             "SendMessage" => {
                 if let Some(send_input) = input.downcast_ref::<aws_sdk_sqs::operation::send_message::SendMessageInput>() {
-                    attributes.push(KeyValue::new("messaging.operation.type", "send"));
+                    attributes.push(KeyValue::new(semconv::MESSAGING_OPERATION_TYPE, semconv::MESSAGING_OPERATION_TYPE_SEND));
                     attributes.push(KeyValue::new("server.address", send_input.queue_url().unwrap_or_default().to_string()));
                     // Extract queue name from URL
                     if let Some(queue_url) = send_input.queue_url() {
                         if let Some(queue_name) = queue_url.split('/').last() {
-                            attributes.push(KeyValue::new("messaging.destination.name", queue_name.to_string()));
+                            attributes.push(KeyValue::new(semconv::MESSAGING_DESTINATION_NAME, queue_name.to_string()));
                         }
                     }
                 }
             }
             "SendMessageBatch" => {
                 if let Some(batch_input) = input.downcast_ref::<aws_sdk_sqs::operation::send_message_batch::SendMessageBatchInput>() {
-                    attributes.push(KeyValue::new("messaging.operation.type", "send"));
+                    attributes.push(KeyValue::new(semconv::MESSAGING_OPERATION_TYPE, semconv::MESSAGING_OPERATION_TYPE_SEND));
                     attributes.push(KeyValue::new("server.address", batch_input.queue_url().unwrap_or_default().to_string()));
-                    attributes.push(KeyValue::new("messaging.batch.message_count", batch_input.entries().len() as i64));
+                    attributes.push(KeyValue::new(semconv::MESSAGING_BATCH_MESSAGE_COUNT, batch_input.entries().len() as i64));
                     // Extract queue name from URL
                     if let Some(queue_url) = batch_input.queue_url() {
                         if let Some(queue_name) = queue_url.split('/').last() {
-                            attributes.push(KeyValue::new("messaging.destination.name", queue_name.to_string()));
+                            attributes.push(KeyValue::new(semconv::MESSAGING_DESTINATION_NAME, queue_name.to_string()));
                         }
                     }
                 }
             }
             "ReceiveMessage" => {
                 if let Some(receive_input) = input.downcast_ref::<aws_sdk_sqs::operation::receive_message::ReceiveMessageInput>() {
-                    attributes.push(KeyValue::new("messaging.operation.type", "receive"));
+                    attributes.push(KeyValue::new(semconv::MESSAGING_OPERATION_TYPE, semconv::MESSAGING_OPERATION_TYPE_RECEIVE));
                     attributes.push(KeyValue::new("server.address", receive_input.queue_url().unwrap_or_default().to_string()));
                     if let Some(max_messages) = receive_input.max_number_of_messages() {
                         attributes.push(KeyValue::new("aws.sqs.max_messages", max_messages as i64));
@@ -162,7 +163,7 @@ impl AttributeBuilder for SqsAttributeBuilder {
                     // Extract queue name from URL
                     if let Some(queue_url) = receive_input.queue_url() {
                         if let Some(queue_name) = queue_url.split('/').last() {
-                            attributes.push(KeyValue::new("messaging.destination.name", queue_name.to_string()));
+                            attributes.push(KeyValue::new(semconv::MESSAGING_DESTINATION_NAME, queue_name.to_string()));
                         }
                     }
                 }
@@ -183,13 +184,13 @@ pub struct SnsAttributeBuilder;
 impl AttributeBuilder for SnsAttributeBuilder {
     fn build_attributes(&self, _service: &str, operation: &str, input: &dyn std::any::Any) -> Vec<KeyValue> {
         let mut attributes = vec![
-            KeyValue::new("messaging.system", "aws_sns"),
+            KeyValue::new(semconv::MESSAGING_SYSTEM, "aws_sns"),
         ];
         
         match operation {
             "Publish" => {
                 if let Some(publish_input) = input.downcast_ref::<aws_sdk_sns::operation::publish::PublishInput>() {
-                    attributes.push(KeyValue::new("messaging.operation.type", "send"));
+                    attributes.push(KeyValue::new(semconv::MESSAGING_OPERATION_TYPE, semconv::MESSAGING_OPERATION_TYPE_SEND));
                     attributes.push(KeyValue::new("messaging.operation.name", "publish"));
                     
                     // Extract topic name from ARN
@@ -209,9 +210,9 @@ impl AttributeBuilder for SnsAttributeBuilder {
             }
             "PublishBatch" => {
                 if let Some(batch_input) = input.downcast_ref::<aws_sdk_sns::operation::publish_batch::PublishBatchInput>() {
-                    attributes.push(KeyValue::new("messaging.operation.type", "send"));
+                    attributes.push(KeyValue::new(semconv::MESSAGING_OPERATION_TYPE, semconv::MESSAGING_OPERATION_TYPE_SEND));
                     attributes.push(KeyValue::new("messaging.operation.name", "publish_batch"));
-                    attributes.push(KeyValue::new("messaging.batch.message_count", batch_input.publish_batch_request_entries().len() as i64));
+                    attributes.push(KeyValue::new(semconv::MESSAGING_BATCH_MESSAGE_COUNT, batch_input.publish_batch_request_entries().len() as i64));
                     
                     // Extract topic name from ARN
                     if let Some(topic_arn) = batch_input.topic_arn() {
